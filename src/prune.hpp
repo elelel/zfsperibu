@@ -3,6 +3,7 @@
 #include <map>
 #include <stdio.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "timestamp.hpp"
 
@@ -13,9 +14,12 @@ void leave_one_per_key(const std::string& dataset, const std::map<key_t, std::ve
     if (v.size() > 1) {
       bool need_delim = false;
       std::string cmd;
-      for (size_t i = 1; i < v.size(); ++i) {
+      std::vector<timestamp> sorted(v.begin(), v.end());
+      std::sort(sorted.begin(), sorted.end());
+      std::cout << "End sort\n";
+      for (size_t i = 0; i < sorted.size() - 1; ++i) {
 	if (need_delim) cmd += "; ";
-	cmd += std::string("zfs destroy ") + dataset + "@" + v[i].string();
+	cmd += std::string("zfs destroy ") + dataset + "@" + sorted[i].string();
 	need_delim = true;
       }
       pid_t fk = fork();
@@ -30,13 +34,17 @@ void leave_one_per_key(const std::string& dataset, const std::map<key_t, std::ve
 template <typename filter_predicate_t, typename grouping_fn_t>
 void prune_snapshots_(const std::string& dataset, filter_predicate_t pred, grouping_fn_t grouping_fn) {
   auto snaps = list_snapshots(dataset);
+
   std::vector<timestamp> filtered;
   for (const auto& s : snaps) 
     if (pred(s)) filtered.push_back(s);
-  std::map<int, std::vector<timestamp> > grouped;
+  std::map<uint64_t, std::vector<timestamp> > grouped;
   
+  std::cout << "Got " << filtered.size() << " snapshots\n";
+
   for (const auto& s : filtered) {
     auto key = grouping_fn(s);
+    std::cout << "Got key " << key << " for " << s.string() << "\n";
     grouped[key].push_back(s);
   }
   leave_one_per_key(dataset, grouped);

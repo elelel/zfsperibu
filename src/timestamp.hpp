@@ -29,10 +29,13 @@ struct timestamp {
   std::chrono::system_clock::time_point time_point() const;
 
   std::string string() const;
+  uint64_t uint64() const;
+
+  std::string dump() const;
 private:
   timestamp(const tm& _tm);
   
-  tm tm_;
+  tm tm_{0};
 };
 
 
