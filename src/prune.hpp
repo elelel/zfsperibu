@@ -17,7 +17,6 @@ void leave_one_per_key(const std::string& dataset, const std::map<key_t, std::ve
       std::string cmd;
       std::vector<timestamp> sorted(v.begin(), v.end());
       std::sort(sorted.begin(), sorted.end());
-      std::cout << "End sort\n";
       for (size_t i = 0; i < sorted.size() - 1; ++i) {
 	if (need_delim) cmd += "; ";
 	cmd += std::string("zfs destroy ") + dataset + "@" + sorted[i].string();
@@ -41,11 +40,8 @@ void prune_snapshots_(const std::string& dataset, filter_predicate_t pred, group
     if (pred(s)) filtered.push_back(s);
   std::map<uint64_t, std::vector<timestamp> > grouped;
   
-  std::cout << "Got " << filtered.size() << " snapshots\n";
-
   for (const auto& s : filtered) {
     auto key = grouping_fn(s);
-    std::cout << "Got key " << key << " for " << s.string() << "\n";
     grouped[key].push_back(s);
   }
   leave_one_per_key(dataset, grouped);

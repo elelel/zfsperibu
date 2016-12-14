@@ -26,6 +26,7 @@ timestamp& timestamp::operator=(const timestamp& other) {
 
 timestamp::timestamp(const tm& _tm) :
   tm_(_tm) {
+  tm_.tm_isdst = 0;
 }
 
 timestamp timestamp::create(const std::string& s) {
@@ -94,14 +95,9 @@ int timestamp::sec() const {
 }
 
 std::time_t timestamp::time_t() const {
-  struct tm * timeinfo;
-  std::cout << "created timeinfo\n";
-  std::cout << "This " << (void*)this << "\n";
-  std::cout << dump() ;
-  *timeinfo = this->tm_;
-  std::cout << "copied timeinfo\n";
-  std::time_t tt = std::mktime(timeinfo);
-  std::cout << "make time \n";
+  tm timeinfo{0};
+  timeinfo = tm_;
+  std::time_t tt = std::mktime(&timeinfo);
   if (tt == -1) {
     std::cout << "Could not convert " + string() + " to time_t\n";
     throw std::runtime_error("Could not convert " + string() + " to time_t");
