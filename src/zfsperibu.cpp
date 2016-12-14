@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 #include "snapshot.hpp"
 #include "prune.hpp"
 

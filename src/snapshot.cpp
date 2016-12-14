@@ -1,5 +1,6 @@
 #include "snapshot.hpp"
 
+#include <cstdlib>
 #include <regex>
 #include <stdio.h>
 #include <unistd.h>
