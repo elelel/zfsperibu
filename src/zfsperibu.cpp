@@ -25,8 +25,8 @@ void prune_snapshots(const std::string& dataset) {
 void print_usage() {
   std::cout << "Usage:"
 	    << "\tzfsperibu [snapshot|prune] [dataset]\n"
-	    << "\tzfsperibu receive [port] [pool] [dataset]\n"
-	    << "\tzfsperibu send [address] [port] [pool] [dataset]\n"
+	    << "\tzfsperibu receive [port] [dataset]\n"
+	    << "\tzfsperibu send [address] [port] [dataset]\n"
     ;
 }
 
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 	  prune_snapshots(argv[i]);
 	}
       } else if (command == "receive") {
-	if (argc != 5) {
+	if (argc != 4) {
 	  std::cout << "Invalid receive invocation\n";
 	  print_usage();
 	  exit(11);
@@ -56,9 +56,9 @@ int main(int argc, char *argv[]) {
 	  print_usage();
 	  exit(10);
 	}
-	receive_snapshot(port, argv[3], argv[4]);
+	receive_snapshot(port, argv[3]);
       } else if (command == "send") {
-	if (argc != 6) {
+	if (argc != 5) {
 	  std::cout << "Invalid send invocation\n";
 	  print_usage();
 	  exit(12);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 	  print_usage();
 	  exit(10);
 	}
-	send_snapshot(argv[2], port, argv[4], argv[5]);
+	send_snapshot(argv[2], port, argv[4]);
       }
     } else {
       std::cout << "Invalid command of length " << strlen(argv[1]) << "\n";

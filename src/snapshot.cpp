@@ -44,18 +44,18 @@ auto create_snapshot(const std::string& dataset) -> timestamp {
 }
 
 
-auto receive_snapshot(const uint16_t& port, const std::string& pool, const std::string& dataset) -> timestamp {
+auto receive_snapshot(const uint16_t& port, const std::string& dataset) -> timestamp {
   auto snapshots = list_snapshots(dataset);
   std::string cmd = "nc -l " + std::to_string(port) + " | ";
   auto ts = timestamp::create(system_clock::now());
   if (snapshots.size() > 0) {
     std::sort(snapshots.begin(), snapshots.end());
     auto latest = snapshots[snapshots.size()-1];
-    cmd += "zfs receive -i " + pool + "/" + dataset + "@" + latest.string() +
-      " " + pool + "/" + dataset + "@" + ts.string();
+    cmd += "zfs receive -i " + dataset + "@" + latest.string() +
+      " " + dataset + "@" + ts.string();
 
   } else {
-    cmd += "zfs receive " + dataset + "/" + dataset + "@" + ts.string();
+    cmd += "zfs receive " + dataset + "@" + ts.string();
   }
   std::cout << "Listening command: " << cmd << "\n";
 
@@ -71,12 +71,12 @@ auto receive_snapshot(const uint16_t& port, const std::string& pool, const std::
   return ts;
 }
 
-void send_snapshot(const std::string& address, const uint16_t& port, const std::string& pool, const std::string& dataset) {
+void send_snapshot(const std::string& address, const uint16_t& port, const std::string& dataset) {
   auto snapshots = list_snapshots(dataset);
   if (snapshots.size() > 0) {
     std::sort(snapshots.begin(), snapshots.end());
     auto latest = snapshots[snapshots.size()-1];
-    std::string cmd = "zfs send " + pool + "/" + dataset + "@" + latest.string() + " | nc -w 20 " + address + " " + std::to_string(port);
+    std::string cmd = "zfs send " + dataset + "@" + latest.string() + " | nc -w 20 " + address + " " + std::to_string(port);
     FILE *pipe = popen(cmd.c_str(), "r");
     if (pipe) {
       const int buf_sz = 2048;
