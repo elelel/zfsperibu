@@ -76,7 +76,7 @@ protected:
 
 struct local_snapshot : public snapshot<local_snapshot> {
   local_snapshot(const std::string& local_path, const std::string& snapname_date) :
-    snapshot<local_snapshot>::snapshot(local_path, snapname_date_) {
+    snapshot<local_snapshot>::snapshot(local_path, snapname_date) {
   }
 
   local_snapshot(const local_snapshot& other) :

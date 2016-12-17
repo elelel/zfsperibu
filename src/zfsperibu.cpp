@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
       if (command == "create") {
 	for (int i = 2; i < argc; ++i) {
 	  auto ts = timestamp::create(std::chrono::system_clock::now());
+	  std::cout << "Creating local snapshot with timestamp " << ts.string() << "\n";
 	  local_snapshot snap(argv[i], ts.string());
 	  snap.create();
 	}
