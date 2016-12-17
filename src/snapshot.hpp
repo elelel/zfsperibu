@@ -79,6 +79,24 @@ struct local_snapshot : public snapshot<local_snapshot> {
     snapshot<local_snapshot>::snapshot(local_path, snapname_date_) {
   }
 
+  local_snapshot(const local_snapshot& other) :
+    snapshot<local_snapshot>::snapshot(other) {
+  }
+
+  local_snapshot(local_snapshot&& other) :
+    snapshot<local_snapshot>::snapshot(std::move(other)) {
+  }
+
+  void swap(local_snapshot& other) {
+    snapshot<local_snapshot>::swap(other);
+  }
+
+  local_snapshot& operator=(const local_snapshot& other) {
+    local_snapshot tmp(other);
+    swap(tmp);
+    return *this;
+  }
+
   static local_snapshot from_name(const std::string& name) {
     std::regex re(R"((.*?)@(\d+)\s.*)");
     std::smatch ms;
@@ -152,6 +170,30 @@ struct remote_dst_snapshot : public snapshot<remote_dst_snapshot> {
     src_server_path_(src_server_path) {
     while ((src_server_path_.size() > 0) && (src_server_path_[0] == '/'))
       src_server_path_ = src_server_path_.substr(1, src_server_path_.length());
+  }
+
+  remote_dst_snapshot(const remote_dst_snapshot& other) :
+    snapshot<remote_dst_snapshot>::snapshot(other),
+    src_server_name_(other.src_server_name_),
+    src_server_path_(other.src_server_path_) {
+  }
+
+  remote_dst_snapshot(remote_dst_snapshot&& other) :
+    snapshot<remote_dst_snapshot>::snapshot(std::move(other)),
+    src_server_name_(other.src_server_name_),
+    src_server_path_(other.src_server_path_) {
+  }
+
+  void swap(remote_dst_snapshot& other) {
+    snapshot<remote_dst_snapshot>::swap(other);
+    std::swap(src_server_name_, other.src_server_name_);
+    std::swap(src_server_path_, other.src_server_path_);
+  }
+
+  remote_dst_snapshot& operator=(const remote_dst_snapshot& other) {
+    remote_dst_snapshot tmp(other);
+    swap(tmp);
+    return *this;
   }
 
   static remote_dst_snapshot from_name(const std::string& name) {
