@@ -26,6 +26,7 @@ auto snapshot_entries() -> std::vector<std::string> {
 }
 
 void send(const remote_src_snapshot& s, const std::string& ssh_cmd) {
+  std::cout << "Sending initial\n";
   std::string cmd = "zfs send " + s.name() + " | " + ssh_cmd;
   int rslt = system(cmd.c_str());
   if (rslt != 0)
@@ -33,6 +34,7 @@ void send(const remote_src_snapshot& s, const std::string& ssh_cmd) {
 }
 
 void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& snap, const std::string& ssh_cmd) {
+  std::cout << "Sending incrementally\n";
   std::string cmd = "zfs send -i " + prev_snap.name() + " " + snap.name() + " | " + ssh_cmd;
   int rslt = system(cmd.c_str());
   if (rslt != 0)
@@ -40,19 +42,20 @@ void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& snap,
 }
 
 remote_src_snapshot last_remote_snapshot(const std::string& path) {
+  std::cout << "Searching for last remote snapshot for " << path << "\n";
   auto snaps = load_snapshots<remote_src_snapshot>();
   if (snaps.size() > 0) {
-      snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [&path] (const remote_src_snapshot& s) {
-	    return s.path() != path;
-	  }));
-      std::sort(snaps.begin(), snaps.end(), [] (const remote_src_snapshot& l,
-						const remote_src_snapshot& r) {
-		  return l.ts() < r.ts();
-		});
-      return snaps[snaps.size() - 1];
+    snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [&path] (const remote_src_snapshot& s) {
+	  return s.path() != path;
+	}), snaps.end());
+    std::sort(snaps.begin(), snaps.end(), [] (const remote_src_snapshot& l,
+					      const remote_src_snapshot& r) {
+		return l.ts() < r.ts();
+	      });
+    return snaps[snaps.size() - 1];
   } else {
     throw std::runtime_error("No existing remote src snapshots for " + path);
   }
 }
-  
+
     

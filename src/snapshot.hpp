@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 #include <regex>
 
@@ -13,6 +14,27 @@ struct snapshot {
   snapshot(const std::string& local_path, const std::string& snapname_date) :
     local_path_(local_path),
     snapname_date_(snapname_date) {
+  }
+
+  snapshot(const snapshot& other) :
+    local_path_(other.local_path_),
+    snapname_date_(other.snapname_date_) {
+  }
+
+  snapshot(snapshot&& other) :
+    local_path_(std::move(other.local_path_)),
+    snapname_date_(std::move(other.snapname_date_)) {
+  }
+
+  void swap(snapshot& other) {
+    std::swap(local_path_, other.local_path_);
+    std::swap(snapname_date_, other.snapname_date_);
+  }
+
+  snapshot& operator=(const snapshot& other) {
+    snapshot tmp(other);
+    swap(tmp);
+    return *this;
   }
 									      
   std::string name() const {
@@ -28,6 +50,7 @@ struct snapshot {
     int rslt = system(cmd.c_str());
     if (rslt != 0)
       throw std::runtime_error("Failed to create snapshot with command " + cmd);
+    std::cout << "Created snapshot " << name() << "\n";
   }
 
   void destroy() const {
@@ -35,6 +58,7 @@ struct snapshot {
     int rslt = system(cmd.c_str());
     if (rslt != 0)
       throw std::runtime_error("Failed to destroy snapshot with command " + cmd);
+    std::cout << "Destroyed snapshot " << name() << "\n";
   }
 
   const std::string& date() const {
@@ -78,6 +102,24 @@ struct local_snapshot : public snapshot<local_snapshot> {
 struct remote_src_snapshot : public snapshot<remote_src_snapshot> {
   remote_src_snapshot(const std::string& local_path, const std::string& snapname_date) :
     snapshot<remote_src_snapshot>::snapshot(local_path, snapname_date) {
+  }
+
+  remote_src_snapshot(const remote_src_snapshot& other) :
+    snapshot<remote_src_snapshot>::snapshot(other) {
+  }
+
+  remote_src_snapshot(remote_src_snapshot&& other) :
+    snapshot<remote_src_snapshot>::snapshot(std::move(other)) {
+  }
+
+  void swap(remote_src_snapshot& other) {
+    snapshot<remote_src_snapshot>::swap(other);
+  }
+
+  remote_src_snapshot& operator=(const remote_src_snapshot& other) {
+    remote_src_snapshot tmp(other);
+    swap(tmp);
+    return *this;
   }
 
   static remote_src_snapshot from_name(const std::string& name) {
@@ -142,7 +184,7 @@ std::vector<snapshot_t> load_snapshots() {
   for (const auto s : entries) {
     try {
       rslt.push_back(snapshot_t::from_name(s));
-    } catch (int) {
+    } catch (std::runtime_error) {
     }
   }
   std::sort(rslt.begin(), rslt.end());

@@ -45,28 +45,43 @@ int main(int argc, char *argv[]) {
 	  prune_local(argv[i]);
 	}
       } else if (command == "send-latest") {
+	if (argc != 4) {
+	  std::cout << "Invalid send-latest invocation\n";
+	  print_usage();
+	  exit(13);
+	}
 	auto ts = timestamp::create(std::chrono::system_clock::now());
 	const auto& path = argv[2];
-	const auto& ssh_cmd = argv[4];
+	const auto& ssh_cmd = argv[3];
 	remote_src_snapshot snap(path, ts.string());
-	snap.create();
 	try {
 	  auto prev_snap = last_remote_snapshot(path);
+	  std::cout << "Found previous snapshot " << prev_snap.name() << "\n";
+	  snap.create();
 	  try {
 	    send(prev_snap, snap, ssh_cmd);
-	  } catch (int) {
-	    // Send failed, destroy stale increment
+	  } catch (std::runtime_error) {
+	    std::cout << "Send failed, destroying stale remote snapshot\n";
 	    snap.destroy();
+	    exit(21);
 	  }
-	} catch (int) {
+	} catch (std::runtime_error) {
+	  std::cout << "No previous backup found, sending initial snapshot\n";
 	  // No incremental backup yet
+	  snap.create();
 	  try {
 	    send(snap, ssh_cmd);
-	  } catch (int) {
-	    // Send failed, destroy stale increment
+	  } catch (std::runtime_error) {
+	    std::cout << "Send failed, destroying stale remote snapshot\n";
 	    snap.destroy();
+	    exit(22);
 	  }
 	}
+	auto snaps = load_snapshots<remote_src_snapshot>();
+	for (const auto& s : snaps)
+	  if (s.name() != snap.name()) {
+	    s.destroy();
+	  }
       }
     } else {
       std::cout << "Invalid command of length " << strlen(argv[1]) << "\n";

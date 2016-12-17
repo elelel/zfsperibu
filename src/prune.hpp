@@ -31,11 +31,11 @@ void prune_snapshots(const std::string& path, predicate_t pred, grouping_fn_t gr
   auto snaps = load_snapshots<snapshot_t>();
   snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [&path] (const snapshot_t& s) {
 	return s.path() != path;
-      }));
+      }), snaps.end());
 
   snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [pred] (const snapshot_t& s) {
 	return !pred(s);
-      }));
+      }), snaps.end());
 
   std::map<uint64_t, std::vector<snapshot_t> > grouped;
 
