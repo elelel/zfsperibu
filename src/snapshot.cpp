@@ -8,23 +8,16 @@
 
 using namespace std::chrono;
 
-auto list_snapshots(const std::string& dataset) -> std::vector<timestamp> {
-  std::vector<timestamp> rslt;
+auto snapshot_entries() -> std::vector<std::string> {
+  std::vector<std::string> rslt;
   FILE *pipe = popen("zfs list -t snapshot", "r");
   if (pipe) {
     const int buf_sz = 2048;
     char buf[buf_sz];
     while (fgets(buf, buf_sz, pipe) != nullptr) {
-      buf[strlen(buf)-1] = 0x00;    // Remove newline char
-      std::string s(buf);
-      std::regex re(R"((.*?)@(\d+)\s.*)");
-      std::smatch ms;
-      if (std::regex_match(s, ms, re) && (ms.size() == 3)) {
-	const auto& r_dataset = ms[1];
-	const auto& r_timestamp = ms[2];
-	if (r_dataset == dataset) {
-	  rslt.push_back(timestamp::create(r_timestamp));
-	}
+      if (strlen(buf) > 1) {
+	buf[strlen(buf)-1] = 0x00;    // Remove newline char
+	rslt.push_back(std::string(buf));
       }
     }
     pclose(pipe);
@@ -32,59 +25,34 @@ auto list_snapshots(const std::string& dataset) -> std::vector<timestamp> {
   return rslt;
 }
 
-auto create_snapshot(const std::string& dataset) -> timestamp {
-  auto ts = timestamp::create(system_clock::now());
-  pid_t fk = fork();
-  if (fk == 0) { // in child
-    std::string cmd = std::string("zfs snapshot -r ") + dataset + "@" + ts.string();
-    system(cmd.c_str());
-    exit(0);
-  }
-  return ts;
+void send(const remote_src_snapshot& s, const std::string& ssh_cmd) {
+  std::string cmd = "zfs send " + s.name() + " | " + ssh_cmd;
+  int rslt = system(cmd.c_str());
+  if (rslt != 0)
+    throw std::runtime_error("Failed to send snapshot with command " + cmd);
 }
 
+void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& snap, const std::string& ssh_cmd) {
+  std::string cmd = "zfs send -i " + prev_snap.name() + " " + snap.name() + " | " + ssh_cmd;
+  int rslt = system(cmd.c_str());
+  if (rslt != 0)
+    throw std::runtime_error("Failed to send snapshot with command " + cmd);
+}
 
-auto receive_snapshot(const uint16_t& port, const std::string& dataset) -> timestamp {
-  auto snapshots = list_snapshots(dataset);
-  std::string cmd = "nc -l " + std::to_string(port) + " | ";
-  auto ts = timestamp::create(system_clock::now());
-  if (snapshots.size() > 0) {
-    std::sort(snapshots.begin(), snapshots.end());
-    auto latest = snapshots[snapshots.size()-1];
-    cmd += "zfs receive -i " + dataset + "@" + latest.string() +
-      " " + dataset + "@" + ts.string();
-
+remote_src_snapshot last_remote_snapshot(const std::string& path) {
+  auto snaps = load_snapshots<remote_src_snapshot>();
+  if (snaps.size() > 0) {
+      snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [&path] (const remote_src_snapshot& s) {
+	    return s.path() != path;
+	  }));
+      std::sort(snaps.begin(), snaps.end(), [] (const remote_src_snapshot& l,
+						const remote_src_snapshot& r) {
+		  return l.ts() < r.ts();
+		});
+      return snaps[snaps.size() - 1];
   } else {
-    cmd += "zfs receive " + dataset + "@" + ts.string();
-  }
-  std::cout << "Listening command: " << cmd << "\n";
-
-  FILE *pipe = popen(cmd.c_str(), "r");
-  if (pipe) {
-    const int buf_sz = 2048;
-    char buf[buf_sz];
-    while (fgets(buf, buf_sz, pipe) != nullptr) {
-    }
-    std::cout << "pipe closed\n";
-    pclose(pipe);
-  }
-  return ts;
-}
-
-void send_snapshot(const std::string& address, const uint16_t& port, const std::string& dataset) {
-  auto snapshots = list_snapshots(dataset);
-  if (snapshots.size() > 0) {
-    std::sort(snapshots.begin(), snapshots.end());
-    auto latest = snapshots[snapshots.size()-1];
-    std::string cmd = "zfs send " + dataset + "@" + latest.string() + " | nc -w 20 " + address + " " + std::to_string(port);
-    FILE *pipe = popen(cmd.c_str(), "r");
-    if (pipe) {
-      const int buf_sz = 2048;
-      char buf[buf_sz];
-      while (fgets(buf, buf_sz, pipe) != nullptr) {
-      }
-      std::cout << "pipe closed\n";
-      pclose(pipe);
-    }
+    throw std::runtime_error("No existing remote src snapshots for " + path);
   }
 }
+  
+    

@@ -7,42 +7,42 @@
 #include <iostream>
 
 #include "timestamp.hpp"
+#include "snapshot.hpp"
 
-template <typename key_t>
-void leave_one_per_key(const std::string& dataset, const std::map<key_t, std::vector<timestamp>>& m) {
+template <typename key_t, typename snapshot_t>
+void leave_one_per_key(const std::map<key_t, std::vector<snapshot_t>>& m) {
   for (const auto& p : m) {
     const auto& v = p.second;
     if (v.size() > 1) {
       bool need_delim = false;
       std::string cmd;
-      std::vector<timestamp> sorted(v.begin(), v.end());
+      std::vector<snapshot_t> sorted(v.begin(), v.end());
       std::sort(sorted.begin(), sorted.end());
-      for (size_t i = 0; i < sorted.size() - 1; ++i) {
-	if (need_delim) cmd += "; ";
-	cmd += std::string("zfs destroy ") + dataset + "@" + sorted[i].string();
-	need_delim = true;
-      }
-      pid_t fk = fork();
-      if (fk == 0) {
-	system(cmd.c_str());
-	exit(0);
+      sorted.pop_back();
+      for (const auto& s : sorted) {
+	  s.destroy();
       }
     }
   }
 }
 
-template <typename filter_predicate_t, typename grouping_fn_t>
-void prune_snapshots_(const std::string& dataset, filter_predicate_t pred, grouping_fn_t grouping_fn) {
-  auto snaps = list_snapshots(dataset);
+template <typename snapshot_t, typename predicate_t, typename grouping_fn_t>
+void prune_snapshots(const std::string& path, predicate_t pred, grouping_fn_t grouping_fn) {
+  auto snaps = load_snapshots<snapshot_t>();
+  snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [&path] (const snapshot_t& s) {
+	return s.path() != path;
+      }));
 
-  std::vector<timestamp> filtered;
-  for (const auto& s : snaps) 
-    if (pred(s)) filtered.push_back(s);
-  std::map<uint64_t, std::vector<timestamp> > grouped;
-  
-  for (const auto& s : filtered) {
+  snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [pred] (const snapshot_t& s) {
+	return !pred(s);
+      }));
+
+  std::map<uint64_t, std::vector<snapshot_t> > grouped;
+
+  for (const auto& s : snaps) {
     auto key = grouping_fn(s);
     grouped[key].push_back(s);
   }
-  leave_one_per_key(dataset, grouped);
+  leave_one_per_key(grouped);
 }
+
