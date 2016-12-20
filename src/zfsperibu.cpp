@@ -41,8 +41,9 @@ int main(int argc, char *argv[]) {
 	  local_snapshot snap(argv[i], ts.string());
 	  snap.create();
 	}
-      } else if (command == "prune") {
+      } else if (command == "prune-local") {
 	for (int i = 2; i < argc; ++i) {
+	  std::cout << "Pruning local " << argv[i] << "\n";
 	  prune_local(argv[i]);
 	}
       } else if (command == "send-latest") {

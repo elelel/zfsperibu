@@ -98,7 +98,7 @@ struct local_snapshot : public snapshot<local_snapshot> {
   }
 
   static local_snapshot from_name(const std::string& name) {
-    std::regex re(R"((.*?)@(\d+)\s.*)");
+    std::regex re(R"((.*?)@local_(\d+)\s.*)");
     std::smatch ms;
     if (std::regex_match(name, ms, re) && (ms.size() == 3)) {
       return local_snapshot(ms[1], ms[2]);
@@ -225,8 +225,10 @@ std::vector<snapshot_t> load_snapshots() {
   auto entries = snapshot_entries();
   for (const auto s : entries) {
     try {
+      std::cout << "Trying snapshot constructor for name '" << s << "'\n";
       rslt.push_back(snapshot_t::from_name(s));
     } catch (std::runtime_error) {
+      std::cout << "Not constructed\n";
     }
   }
   std::sort(rslt.begin(), rslt.end());

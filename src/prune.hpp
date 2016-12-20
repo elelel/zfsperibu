@@ -12,6 +12,7 @@
 template <typename key_t, typename snapshot_t>
 void leave_one_per_key(const std::map<key_t, std::vector<snapshot_t>>& m) {
   for (const auto& p : m) {
+    std::cout << "Leave one per key, processing key " << p.first << "\n";
     const auto& v = p.second;
     if (v.size() > 1) {
       bool need_delim = false;
@@ -29,9 +30,11 @@ void leave_one_per_key(const std::map<key_t, std::vector<snapshot_t>>& m) {
 template <typename snapshot_t, typename predicate_t, typename grouping_fn_t>
 void prune_snapshots(const std::string& path, predicate_t pred, grouping_fn_t grouping_fn) {
   auto snaps = load_snapshots<snapshot_t>();
+  std::cout << "Prune local " << path << ", got " << snaps.size() << " snapshots\n";
   snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [&path] (const snapshot_t& s) {
 	return s.path() != path;
       }), snaps.end());
+  std::cout << "Prune local " << path << ", after filter " << snaps.size() << " snapshots\n";
 
   snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [pred] (const snapshot_t& s) {
 	return !pred(s);
