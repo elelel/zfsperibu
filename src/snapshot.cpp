@@ -25,9 +25,9 @@ auto snapshot_entries() -> std::vector<std::string> {
   return rslt;
 }
 
-void send(const remote_src_snapshot& s, const std::string& ssh_cmd, const std::string& remote_path) {
+void send(const remote_src_snapshot& snap, const std::string& ssh_cmd, const std::string& remote_path) {
   std::cout << "Sending initial\n";
-  std::string cmd = "zfs send " + s.name() + " | " + ssh_cmd + " " + remote_path;
+  std::string cmd = "zfs send " + snap.name() + " | " + ssh_cmd + " " + remote_path;
   int rslt = system(cmd.c_str());
   if (rslt != 0)
     throw std::runtime_error("Failed to send snapshot with command " + cmd);

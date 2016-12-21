@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 	  prune_local(argv[i]);
 	}
       } else if (command == "send-latest") {
-	if (argc != 4) {
+	if (argc != 5) {
 	  std::cout << "Invalid send-latest invocation\n";
 	  print_usage();
 	  exit(13);
