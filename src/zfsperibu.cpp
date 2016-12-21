@@ -25,7 +25,7 @@ void prune_local(const std::string& path) {
 void print_usage() {
   std::cout << "Usage:"
 	    << "\tzfsperibu create path [path...]\n"
-	    << "\tzfsperibu send-latest path ssh_command\n"
+	    << "\tzfsperibu send-latest path ssh_command remote_path\n"
 	    << "\tzfsperibu prune-local path [path...]\n"
     ;
 }
@@ -55,13 +55,14 @@ int main(int argc, char *argv[]) {
 	auto ts = timestamp::create(std::chrono::system_clock::now());
 	const auto& path = argv[2];
 	const auto& ssh_cmd = argv[3];
+	const auto& remote_path = argv[4];
 	remote_src_snapshot snap(path, ts.string());
 	try {
 	  auto prev_snap = last_remote_snapshot(path);
 	  std::cout << "Found previous snapshot " << prev_snap.name() << "\n";
 	  snap.create();
 	  try {
-	    send(prev_snap, snap, ssh_cmd);
+	    send(prev_snap, snap, ssh_cmd, remote_path);
 	  } catch (std::runtime_error) {
 	    std::cout << "Send failed, destroying stale remote snapshot\n";
 	    snap.destroy();
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]) {
 	  // No incremental backup yet
 	  snap.create();
 	  try {
-	    send(snap, ssh_cmd);
+	    send(snap, ssh_cmd, remote_path);
 	  } catch (std::runtime_error) {
 	    std::cout << "Send failed, destroying stale remote snapshot\n";
 	    snap.destroy();

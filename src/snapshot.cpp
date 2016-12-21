@@ -25,17 +25,17 @@ auto snapshot_entries() -> std::vector<std::string> {
   return rslt;
 }
 
-void send(const remote_src_snapshot& s, const std::string& ssh_cmd) {
+void send(const remote_src_snapshot& s, const std::string& ssh_cmd, const std::string& remote_path) {
   std::cout << "Sending initial\n";
-  std::string cmd = "zfs send " + s.name() + " | " + ssh_cmd;
+  std::string cmd = "zfs send " + s.name() + " | " + ssh_cmd + " " + remote_path;
   int rslt = system(cmd.c_str());
   if (rslt != 0)
     throw std::runtime_error("Failed to send snapshot with command " + cmd);
 }
 
-void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& snap, const std::string& ssh_cmd) {
+void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& snap, const std::string& ssh_cmd, const std::string& remote_path) {
   std::cout << "Sending incrementally\n";
-  std::string cmd = "zfs send -i " + prev_snap.name() + " " + snap.name() + " | " + ssh_cmd;
+  std::string cmd = "zfs send -i " + prev_snap.name() + " " + snap.name() + " | " + ssh_cmd + " " + remote_path;
   int rslt = system(cmd.c_str());
   if (rslt != 0)
     throw std::runtime_error("Failed to send snapshot with command " + cmd);

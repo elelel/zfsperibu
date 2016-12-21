@@ -235,6 +235,6 @@ std::vector<snapshot_t> load_snapshots() {
   return rslt;
 }
 
-void send(const remote_src_snapshot& s, const std::string& ssh_cmd);
-void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& new_snap, const std::string& ssh_cmd);
+void send(const remote_src_snapshot& s, const std::string& ssh_cmd, const std::string& remote_path);
+void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& new_snap, const std::string& ssh_cmd, const std::string& remote_path);
 remote_src_snapshot last_remote_snapshot(const std::string& path);
