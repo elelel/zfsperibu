@@ -26,16 +26,18 @@ auto snapshot_entries() -> std::vector<std::string> {
 }
 
 void send(const remote_src_snapshot& snap, const std::string& ssh_cmd, const std::string& remote_path) {
-  std::cout << "Sending initial\n";
   std::string cmd = "zfs send " + snap.name() + " | " + ssh_cmd + " " + remote_path;
+  std::cout << "Sending initial, command " << cmd << "\n";
   int rslt = system(cmd.c_str());
   if (rslt != 0)
     throw std::runtime_error("Failed to send snapshot with command " + cmd);
 }
 
 void send(const remote_src_snapshot& prev_snap, const remote_src_snapshot& snap, const std::string& ssh_cmd, const std::string& remote_path) {
-  std::cout << "Sending incrementally\n";
   std::string cmd = "zfs send -i " + prev_snap.name() + " " + snap.name() + " | " + ssh_cmd + " " + remote_path;
+  if (cmd[cmd.size()-1] != '/') cmd += "/";
+  cmd += snap.name();
+  std::cout << "Sending incrementally, command " << cmd << "\n";
   int rslt = system(cmd.c_str());
   if (rslt != 0)
     throw std::runtime_error("Failed to send snapshot with command " + cmd);
@@ -48,10 +50,14 @@ remote_src_snapshot last_remote_snapshot(const std::string& path) {
     snaps.erase(std::remove_if(snaps.begin(), snaps.end(), [&path] (const remote_src_snapshot& s) {
 	  return s.path() != path;
 	}), snaps.end());
+    std::cout << "Erased last snapshots with path mismatch\n";
     std::sort(snaps.begin(), snaps.end(), [] (const remote_src_snapshot& l,
 					      const remote_src_snapshot& r) {
 		return l.ts() < r.ts();
 	      });
+  }
+  
+  if (snaps.size() > 0) {
     return snaps[snaps.size() - 1];
   } else {
     throw std::runtime_error("No existing remote src snapshots for " + path);

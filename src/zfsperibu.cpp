@@ -70,7 +70,6 @@ int main(int argc, char *argv[]) {
 	  }
 	} catch (std::runtime_error) {
 	  std::cout << "No previous backup found, sending initial snapshot\n";
-	  // No incremental backup yet
 	  snap.create();
 	  try {
 	    send(snap, ssh_cmd, remote_path);
