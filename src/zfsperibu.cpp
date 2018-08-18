@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 	}
 	auto snaps = load_snapshots<remote_src_snapshot>();
 	for (const auto& s : snaps)
-	  if (s.name() != snap.name()) {
+	  if ((s.path() == path) && (s.name() != snap.name())) {
 	    s.destroy();
 	  }
       }
